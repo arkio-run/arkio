@@ -1,0 +1,24 @@
+appid: {{ appid }}
+services:
+  wsgi:
+    app: {{ name }}.app:app
+  grpc:
+    app: {{ name }}.service:service
+
+consumers:
+  - broker: amqp
+    type: amqp
+    concurrency: 1
+    queues:
+      - name: amqp01
+        handler: {{ name }}.consumer:handle_amqp
+  - broker: kafka
+    type: kafka
+    topics:
+      - name: topic01
+        handler: {{ name }}.consumer:handle_kafka
+        group: T20220430
+        concurrency: 3
+
+log_lv: debug
+#log_dir: /ssd

@@ -1,0 +1,79 @@
+## WSGI
+
+### 启动
+```shell
+gunicorn {{ name }}.app:app --reload
+
+ark serve --wsgi
+```
+
+### 测试
+```shell
+curl "http://127.0.0.1:8000/"
+```
+
+### 压测
+```shell
+ab -n 10000 -c 100 -t 10 "http://127.0.0.1:8000/"
+```
+
+## GRPC
+### 启动
+```shell
+ark serve
+```
+
+### 测试
+```shell
+grpcurl -plaintext 127.0.0.1:50051 list
+grpcurl -plaintext -d '{"name": "arkio"}' 127.0.0.1:50051 helloworld.Greeter/SayHello
+grpcurl -plaintext -d '{"name": "arkio"}' -import-path ./protos -proto helloworld.proto 127.0.0.1:50051 helloworld.Greeter/SayHello
+```
+
+
+### 压测
+```shell
+ghz --insecure --async \
+    --import-paths ./protos \
+    --proto helloworld.proto \
+    --call helloworld.Greeter/SayHello \
+    -c 300 -n 1000 --rps 10 \
+    -d '{"name":"arkio"}' 127.0.0.1:50051
+```
+
+
+## 工具
+### grpcurl
+```shell
+# mac
+brew install grpcurl
+
+# linux
+https://github.com/fullstorydev/grpcurl/releases/download/v1.8.6/grpcurl_1.8.6_linux_x86_64.tar.gz
+```
+[文档] https://github.com/fullstorydev/grpcurl
+
+### ghz
+```shell
+# mac
+brew install ghz
+
+# linux
+wget https://github.com/bojand/ghz/releases/download/v0.108.0/ghz-linux-x86_64.tar.gz
+```
+[文档] https://ghz.sh/docs/usage
+
+
+### protobuf
+```shell
+# mac
+brew install protobuf
+
+# linux
+PROTOC_ZIP=protoc-3.14.0-osx-x86_64.zip
+curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v3.14.0/$PROTOC_ZIP
+sudo unzip -o $PROTOC_ZIP -d /usr/local bin/protoc
+sudo unzip -o $PROTOC_ZIP -d /usr/local 'include/*'
+rm -f $PROTOC_ZIP
+```
+[文档] http://google.github.io/proto-lens/installing-protoc.html

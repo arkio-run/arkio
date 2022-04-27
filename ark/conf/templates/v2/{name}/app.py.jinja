@@ -1,0 +1,15 @@
+import logging
+from typing import Any
+from typing import Dict
+
+from flask import Flask
+
+logger = logging.getLogger(__name__)
+
+app = Flask(__name__)
+
+
+@app.get("/")
+def index() -> Dict[str, Any]:
+    logger.info("index")
+    return {"message": "Hello World"}

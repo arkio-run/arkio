@@ -1,0 +1,13 @@
+infra:
+  database:
+    db:
+      master: mysql+pymysql://root:root@localhost:3306/mysql?charset=utf8mb4
+      slave: mysql+pymysql://root:root@localhost:3306/mysql?charset=utf8mb4
+  redis:
+    redis: redis://localhost:6379/0
+  amqp:
+    amqp: amqp://:@localhost:5672
+  kafka:
+    kafka: localhost:9092
+  celery:
+    broker: amqp://:@localhost:5672

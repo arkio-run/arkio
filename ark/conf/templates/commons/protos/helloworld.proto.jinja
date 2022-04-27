@@ -1,0 +1,18 @@
+syntax = "proto3";
+package helloworld;
+
+import "google/protobuf/empty.proto";
+
+
+message HelloRequest {
+  string name = 1;
+}
+
+message HelloReply {
+  string message = 1;
+}
+
+service Greeter {
+  rpc SayHello (HelloRequest) returns (HelloReply) {}
+  rpc SayHelloAsync (HelloRequest) returns (google.protobuf.Empty) {}
+}
