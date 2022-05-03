@@ -1,0 +1,42 @@
+import logging
+import helloworld_pb2
+import helloworld_pb2_grpc
+
+from ark.asyn import task
+from ark.apps.grpc import Service
+from grpc.aio import ServicerContext
+from google.protobuf.empty_pb2 import Empty
+
+from helloworld_pb2 import HelloReply
+from helloworld_pb2 import HelloRequest
+
+from .infras import red
+from .clients import stub
+from .sender import kafka_sender, amqp_sender
+
+logger = logging.getLogger(__name__)
+
+
+class Greeter(helloworld_pb2_grpc.GreeterServicer):
+    def SayHello(self, request: HelloRequest, context: ServicerContext) -> HelloReply:
+        logger.info('SayHello, {}'.format(request.name))
+        if request.name == 'kafka':
+            kafka_sender.send({'name': "kafka"})
+        elif request.name == 'rabbit':
+            amqp_sender.send({'name': "rabbit"}, routing_key='amqp01')
+        elif request.name == 'redis':
+            assert len(red.get("T01")) == 10
+        rsp = HelloReply(message="Hello, %s!" % request.name)
+        return rsp
+
+    @task()
+    def SayHelloAsync(self, request: HelloRequest, context: ServicerContext) -> Empty:
+        if request.name == 'rpc':
+            rsp = stub.SayHello(request)
+            logger.info("SayHelloAsync, {}, rsp: {}".format(request.name, rsp. message))
+        else:
+            logger.info("SayHelloAsync, {}, rsp: {}".format(request.name, 'empty'))
+        return Empty()
+
+
+service = Service(protos=[(helloworld_pb2.DESCRIPTOR, helloworld_pb2_grpc)])

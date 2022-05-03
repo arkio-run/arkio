@@ -1,0 +1,5 @@
+from ark.mq.sender import AmqpSender
+from ark.mq.sender import KafkaSender
+
+amqp_sender = AmqpSender(broker='amqp')
+kafka_sender = KafkaSender(broker='kafka', topic='topic01')

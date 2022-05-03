@@ -1,0 +1,6 @@
+from redis import Redis
+from ark.config import load_infra_config
+
+infra_config = load_infra_config()
+red = Redis.from_url(infra_config.redis.get('redis'))
+print('Redis, set T01:{}'.format(red.set("T01", "1"*10, ex=3600*24)))
