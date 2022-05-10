@@ -59,7 +59,9 @@ class InfraConfig:
         if not app_config:
             load_app_config()
         if env.is_in_ut():
-            stream = open("infra_unittest.yaml")
+            stream = open("infra_ut.yaml")
+        elif env.is_in_dev():
+            stream = open("infra_dev.yaml")
         else:
             stream = open("infra.yaml")
         self.config = yaml.load(stream, Loader=yaml.FullLoader)
