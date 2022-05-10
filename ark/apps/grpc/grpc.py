@@ -1,3 +1,4 @@
+import functools
 import logging
 from concurrent import futures
 from types import ModuleType
@@ -9,6 +10,9 @@ from typing import Optional
 from typing import Tuple
 
 import grpc._server
+from google.protobuf import json_format
+
+from ark.ctx import g, Meta
 from google.protobuf.descriptor import FileDescriptor
 from grpc_reflection.v1alpha import reflection
 
@@ -16,11 +20,54 @@ from ark.config import GrpcAppConfig
 from ark.config import load_app_config
 from ark.env import get_mode
 from ark.env import MODE_GRPC
+from ark.exc import BizExc, SysExc
 from ark.utils import load_module
 from ark.utils import load_obj
+from .patch import custom_code
 
 service = None
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('ark.apps.grpc')
+
+
+class Servicer:
+    _wrapped_methods = {}
+
+    def __getattribute__(self, name):
+        if name[0] == '_':
+            return object.__getattribute__(self, name)
+
+        if name in self._wrapped_methods:
+            return self._wrapped_methods[name]
+
+        attr = object.__getattribute__(self, name)
+        if not hasattr(attr, '__call__'):
+            return attr
+
+        @functools.wraps(attr)
+        def inner(request, context):
+            """统计接口状况，QPS、耗时等"""
+            g.meta = Meta(context=context)
+            try:
+                msg = json_format.MessageToDict(request, preserving_proto_field_name=True)
+                logger.info('iface:{} request:{}'.format(name, msg))
+                rsp = attr(request, context)
+            except (BizExc, SysExc) as exc:
+                ret = 'biz_exc' if isinstance(exc, BizExc) else 'sys_exc'
+                logger.warning('iface:{} exc:{}'.format(name, repr(exc)))
+                context.abort(custom_code(exc.code), exc.msg) if context else None
+            except BaseException as exc:
+                ret = 'sys_exc'
+                logger.error('iface:{} error:{}'.format(name, repr(exc)), exc_info=True)
+                context.abort(grpc.StatusCode.UNKNOWN, 'unknown error') if context else None
+            else:
+                return rsp
+            finally:
+                try:
+                    g.meta.clear()
+                except BaseException as exc:
+                    logger.error('Servicer method:{} exc:{}'.format(name, repr(exc)), exc_info=True)
+        self._wrapped_methods[name] = inner
+        return inner
 
 
 class Service:

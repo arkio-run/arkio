@@ -7,7 +7,7 @@ from uuid import uuid4
 class Meta:
     TRACE_ID_KEY = "x-trace-id"
 
-    def __init__(self) -> None:
+    def __init__(self, **kwargs) -> None:
         self._meta: Dict[str, Any] = {}
 
     def set(self, k: str, v: Any) -> None:
@@ -44,6 +44,10 @@ class Global(object):
         except:  # noqa
             self.ctx.meta = Meta()
             return self.ctx.meta
+
+    @meta.setter
+    def meta(self, meta):
+        self.ctx.meta = meta
 
 
 g: Global = Global()
