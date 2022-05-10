@@ -65,6 +65,11 @@ ghz --insecure --async \
 
 ## 基础设施
 
+### redis
+```shell
+docker run -d --hostname redis --name redis -p 6379:6379 redis
+```
+
 ### rabbitmq
 ```shell
 docker run -d --hostname rabbit --name rabbit -p 5672:5672 -p 15672:15672 rabbitmq:3-management
