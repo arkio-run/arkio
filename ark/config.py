@@ -1,7 +1,7 @@
 from typing import Any
 from typing import Dict
 from typing import Union
-
+import os
 import yaml
 
 from . import env
@@ -58,12 +58,13 @@ class InfraConfig:
     def load(self) -> "InfraConfig":
         if not app_config:
             load_app_config()
+        cfg_dir = os.getenv("CFG_DIR") or ""
         if env.is_in_ut():
-            stream = open("infra_ut.yaml")
+            stream = open(os.path.join(cfg_dir, "infra_ut.yaml"))
         elif env.is_in_dev():
-            stream = open("infra_dev.yaml")
+            stream = open(os.path.join(cfg_dir, "infra_dev.yaml"))
         else:
-            stream = open("infra.yaml")
+            stream = open(os.path.join(cfg_dir, "infra.yaml"))
         self.config = yaml.load(stream, Loader=yaml.FullLoader)
         return self
 
