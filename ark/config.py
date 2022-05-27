@@ -27,7 +27,8 @@ class BasicAppConfig:
 
     @property
     def log_dir(self) -> str:
-        return str(self.config.get("log_dir", "/tmp"))
+        log_dir = os.getenv("LOG_DIR") or ""
+        return str(log_dir or self.config.get("log_dir", "/tmp"))
 
     @property
     def consumers(self) -> Any:
