@@ -1,5 +1,6 @@
 import functools
 import logging
+import time
 from concurrent import futures
 from types import ModuleType
 from typing import Any
@@ -30,6 +31,7 @@ logger = logging.getLogger('ark.apps.grpc')
 
 
 class Servicer:
+    ignore_methods = []
     _wrapped_methods = {}
 
     def __getattribute__(self, name):
@@ -47,9 +49,10 @@ class Servicer:
         def inner(request, context):
             """统计接口状况，QPS、耗时等"""
             g.meta = Meta(context=context)
+            t0 = time.time()
             try:
-                msg = json_format.MessageToDict(request, preserving_proto_field_name=True)
-                logger.info('iface:{} request:{}'.format(name, msg))
+                json_req = json_format.MessageToDict(request, preserving_proto_field_name=True)
+                logger.info('iface:{} req:{}'.format(name, json_req))
                 rsp = attr(request, context)
             except (BizExc, SysExc) as exc:
                 ret = 'biz_exc' if isinstance(exc, BizExc) else 'sys_exc'
@@ -60,6 +63,10 @@ class Servicer:
                 logger.error('iface:{} error:{}'.format(name, repr(exc)), exc_info=True)
                 context.abort(grpc.StatusCode.UNKNOWN, 'unknown error') if context else None
             else:
+                if name not in self.ignore_methods:
+                    cost = (time.time()-t0) * 1000
+                    json_rsp = json_format.MessageToDict(rsp, preserving_proto_field_name=True)
+                    logger.info('iface:{} cost:{:.02f}ms rsp:{}'.format(name, cost, json_rsp))
                 return rsp
             finally:
                 try:
