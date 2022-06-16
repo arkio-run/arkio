@@ -1,9 +1,13 @@
+import sys
 import enum
-import collections
 import grpc._common as cc
+if sys.version_info.major == 3 and sys.version_info.minor >= 10:
+    from collections.abc import MutableMapping
+else:
+    from collections import MutableMapping
 
 
-class GRPCCodeOutWrapper(collections.MutableMapping):
+class GRPCCodeOutWrapper(MutableMapping):
     def __init__(self, *args, **kwargs):
         self.store = dict()
         self.update(dict(*args, **kwargs))  # use the free update to set keys
@@ -27,7 +31,7 @@ class GRPCCodeOutWrapper(collections.MutableMapping):
         return self.store.get(key, key)
 
 
-class GRPCCodeInWrapper(collections.MutableMapping):
+class GRPCCodeInWrapper(MutableMapping):
     def __init__(self, *args, **kwargs):
         self.store = dict()
         self.update(dict(*args, **kwargs))  # use the free update to set keys
