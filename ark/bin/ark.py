@@ -7,8 +7,11 @@ import click
 from ..log import set_log
 from ark import __version__
 from ark.config import set_conf
-from ark.env import set_grpc
-from ark.env import set_wsgi
+from ark.env import (
+    is_in_ut,
+    set_wsgi,
+    set_grpc,
+)
 
 context_settings = {"ignore_unknown_options": True, "allow_extra_args": True}
 
@@ -100,8 +103,16 @@ def consumer() -> None:
 @cli.command(context_settings=context_settings)
 def test() -> None:
     click.echo("ark test.")
-    click.echo("coming soon!\n"*3)
     set_log()
+    if not is_in_ut():
+        click.echo('env is not UNITTEST!\n'*3)
+        return
+    set_log()
+    set_grpc()
+    set_conf()
+    sys.argv = sys.argv[:1] + sys.argv[2:]
+    import pytest
+    sys.exit(pytest.main())
 
 
 @cli.command(context_settings=context_settings)
