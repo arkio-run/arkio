@@ -121,6 +121,7 @@ def load_infra_config() -> InfraConfig:
     return infra_config
 
 
-def set_conf():
+def set_conf(infra=True):
     load_app_config()
-    load_infra_config()
+    if infra:
+        load_infra_config()

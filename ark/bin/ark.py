@@ -93,7 +93,7 @@ def worker() -> None:
 def consumer() -> None:
     click.echo("ark consumer.")
     set_log()
-    set_conf()
+    set_conf(infra=False)
 
     from ark.apps.consumer import start  # noqa
 
