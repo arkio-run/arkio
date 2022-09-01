@@ -26,6 +26,14 @@ class BasicAppConfig:
         return self.config.get("log_lv", "INFO").upper()  # type: ignore
 
     @property
+    def log_when(self) -> str:
+        return self.config.get("log_when", "D").upper()  # type: ignore
+
+    @property
+    def log_backup(self) -> int:
+        return int(self.config.get("log_backup", 14))
+
+    @property
     def log_dir(self) -> str:
         log_dir = os.getenv("LOG_DIR") or ""
         return str(log_dir or self.config.get("log_dir", "/tmp"))

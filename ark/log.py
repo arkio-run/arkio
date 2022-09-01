@@ -52,7 +52,7 @@ def set_log() -> None:
     elif os.getenv("LOG_NAME_USING_HOST_SUFFIX"):
         suffix = "-" + socket.gethostname().split('-')[-1]
     filename = "{}/{}/{}{}.log".format(cfg.log_dir, cfg.app_id, mode, suffix)
-    rotating_handler = TimedRotatingFileHandler(filename=filename)
+    rotating_handler = TimedRotatingFileHandler(filename=filename, when=cfg.log_when, backupCount=cfg.log_backup)
     rotating_handler.setLevel(level)
     rotating_handler.setFormatter(logging.Formatter(fmt))
     rotating_handler.addFilter(TraceFilter())
