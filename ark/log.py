@@ -47,7 +47,9 @@ def set_log() -> None:
     # 文件日志
     os.makedirs(os.path.join(cfg.log_dir, cfg.app_id), exist_ok=True)
     suffix = ""
-    if os.getenv("LOG_NAME_USING_HOST"):
+    if os.getenv("LOG_NAME_SUFFIX"):
+        suffix = "-" + os.getenv("LOG_NAME_SUFFIX")
+    elif os.getenv("LOG_NAME_USING_HOST"):
         suffix = "-" + socket.gethostname()
     elif os.getenv("LOG_NAME_USING_HOST_SUFFIX"):
         suffix = "-" + socket.gethostname().split('-')[-1]
