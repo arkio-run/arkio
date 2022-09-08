@@ -1,3 +1,4 @@
+import signal
 import functools
 import logging
 import time
@@ -87,7 +88,7 @@ class Service:
 
     def init(self) -> None:
         mode = get_mode()
-        logger.info("service init :{}".format(mode))
+        logger.info("service init: {}".format(mode))
         if mode == MODE_GRPC:
             self.server = grpc.server(futures.ThreadPoolExecutor(max_workers=100))
 
@@ -118,7 +119,7 @@ class Service:
         self.server.wait_for_termination()
 
     def stop(self) -> None:
-        logger.info("service stop")
+        logger.info("service stop, graceful")
         assert self.server
         self.server.stop(5)
 
@@ -136,6 +137,16 @@ def init() -> Service:
     return service
 
 
+def stop(signum: int, frame: Any):
+    global service
+    if not service:
+        return
+    logger.info("grpc, got signal {}".format(signum))
+    assert isinstance(service, Service)
+    service.stop()
+
+
 def start() -> None:
-    s = init()
-    s.start()
+    signal.signal(signal.SIGINT, stop)
+    signal.signal(signal.SIGTERM, stop)
+    init().start()
