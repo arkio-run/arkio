@@ -69,27 +69,28 @@ class AmqpConsumer(ConsumerMixin):
         )
 
     def declare_queue(
-        self, name: str, durable: bool = True, exclusive: bool = False, auto_delete: bool = False
+        self, name: str, durable: bool = True, exclusive: bool = False, auto_delete: bool = False, channel=None
     ) -> Queue:
-        channel = self.connection.channel()
-        queue = Queue(name=name, durable=durable, exclusive=exclusive, auto_delete=auto_delete, channel=channel)
-        queue.declare()
+        queue = Queue(name=name, durable=durable, exclusive=exclusive, auto_delete=auto_delete)
+        queue.declare(channel=channel)
         return queue
 
-    def unbind_queue(self, queue: Queue, rules: List[Dict[str, Union[str, bool]]]) -> None:
+    def unbind_queue(self, queue: Queue, rules: List[Dict[str, Union[str, bool]]], channel=None) -> None:
         for rule in rules:
             queue.unbind_from(
                 exchange=Exchange(name=rule.get("exchange", "")),
                 routing_key=rule.get("routing_key", ""),
                 nowait=rule.get("nowait", False),
+                channel=channel,
             )
 
-    def bind_queue(self, queue: Queue, rules: List[Dict[str, Union[str, bool]]]) -> None:
+    def bind_queue(self, queue: Queue, rules: List[Dict[str, Union[str, bool]]], channel=None) -> None:
         for rule in rules:
             queue.bind_to(
                 exchange=rule.get("exchange", ""),
                 routing_key=rule.get("routing_key", ""),
                 nowait=rule.get("nowait", False),
+                channel=channel,
             )
 
     def stop(self) -> None:

@@ -81,20 +81,23 @@ class ConsumerMix:
 
         broker = infra.amqp.get(self.broker, "")
         self.consumer = AmqpConsumer(broker=broker)
+        channel = self.consumer.connection.channel()
         for cfg in self.queues:
             queue = self.consumer.declare_queue(
                 name=cfg["name"],
                 durable=cfg.get("durable", True),
                 exclusive=cfg.get("exclusive", False),
                 auto_delete=cfg.get("auto_delete", False),
+                channel=channel,
             )
             if "binding" in cfg:
-                self.consumer.bind_queue(queue, cfg["binding"])
+                self.consumer.bind_queue(queue, cfg["binding"], channel=channel)
             if "unbound" in cfg:
-                self.consumer.unbind_queue(queue, cfg["unbound"])
+                self.consumer.unbind_queue(queue, cfg["unbound"], channel=channel)
             handler = load_obj(cfg["handler"])
             prefetch_count = cfg.get("prefetch_count")
             self.consumer.add_handler(queue, handler, prefetch_count=prefetch_count)
+        self.consumer.connection.close()
         self.consumer.run()
 
     def run_kafka(self) -> None:
