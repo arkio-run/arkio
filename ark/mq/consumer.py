@@ -8,6 +8,7 @@ from typing import List
 from typing import Union
 
 import ujson
+from ark.metric.mq import MqMetric
 from confluent_kafka import Consumer
 from confluent_kafka.cimpl import KafkaException
 from confluent_kafka.cimpl import TopicPartition
@@ -20,6 +21,8 @@ from kombu.transport.pyamqp import Channel
 
 from ark.exc import BizExc
 from ark.exc import SysExc
+from ..ctx import g, Meta
+from ..mock import Context
 
 logger = logging.getLogger(__name__)
 
@@ -29,15 +32,25 @@ def wrap(type: str, target: str, func: Any) -> Any:
 
     @functools.wraps(func)
     def inner(*args: Any, **kwargs: Any) -> Any:
+        t0 = time.time()
+        ret = 'success'
+        g.meta = Meta(context=Context())
         try:
             return func(*args, **kwargs)
         except BizExc as exc:
             logger.warning("target:{} handler:{} exc:{}".format(target, hdl, repr(exc)))
         except (SysExc, BaseException) as exc:
             # consumer retry
+            ret = 'sys_exc'
             logger.error("target:{} handler:{} error:{}".format(target, hdl, repr(exc)), exc_info=True)
             raise
-
+        finally:
+            try:
+                tags = {'model': 'consumer', 'type': type, 'target': target, 'handler': hdl, 'ret': ret}
+                MqMetric.timer(type, tags=tags, amt=time.time() - t0)
+                g.meta.clear()
+            except BaseException as exc:
+                logger.error('consumer type:{} target:{} exc:{}'.format(type, target, repr(exc)), exc_info=True)
     return inner
 
 

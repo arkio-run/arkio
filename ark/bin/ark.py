@@ -39,8 +39,10 @@ def shell() -> None:
     set_grpc()
     set_conf()
 
-    import ark.apps.shell  # noqa
+    import ark.metric.timer  # noqa
+    ark.metric.timer.start()
 
+    import ark.apps.shell  # noqa
     ark.apps.shell.start()
 
 
@@ -73,8 +75,9 @@ def serve(wsgi: bool) -> None:
         set_grpc()
         set_conf()
 
+        import ark.metric.timer  # noqa
+        ark.metric.timer.start()
         import ark.apps.grpc  # noqa
-
         ark.apps.grpc.start()
 
 

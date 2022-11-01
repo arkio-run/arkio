@@ -61,6 +61,9 @@ class ConsumerMix:
             raise Exception("consumer, infra config not empty.")
         config.load_infra_config()
 
+        from ark.metric import timer
+        timer.start()
+
     def run(self) -> None:
         logger.info("consumer running.")
         signal.signal(signal.SIGINT, self.stop)

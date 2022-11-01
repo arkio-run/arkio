@@ -42,6 +42,10 @@ class BasicAppConfig:
     def consumers(self) -> Any:
         return self.config.get("consumers", {})
 
+    @property
+    def metric(self) -> Any:
+        return self.config.get("metric", {})
+
 
 class AsgiAppConfig(BasicAppConfig):
     @property
@@ -96,6 +100,10 @@ class InfraConfig:
     @property
     def celery_broker(self) -> str:
         return self.config.get("infra", {}).get("celery", {}).get("broker", "")  # type: ignore
+
+    @property
+    def pushgateway(self) -> str:
+        return self.config.get("infra", {}).get("pushgateway", {})  # type: ignore
 
 
 app_config = None
