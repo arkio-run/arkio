@@ -1,3 +1,4 @@
+import os
 import time
 import socket
 import logging
@@ -20,15 +21,17 @@ def running():
         return
     assert isinstance(basic_config, BasicAppConfig)
     assert isinstance(infra_config, InfraConfig)
-    default_labels_dic = {"host": host, "service": basic_config.app_id}
+    logger.info("metric running pid:{} ppid:{}".format(os.getpid(), os.getppid()))
+    pid = 0 if os.getpid() == os.getppid() else os.getpid()
+    grouping_key = {"host": host, "service": basic_config.app_id, "pid": pid}
     pushgateway = (infra_config.pushgateway if infra_config else {}).get("default", "")
-    logger.info('host:{} service:{} pushgateway:{}'.format(host, basic_config.app_id, pushgateway))
+    logger.info('pushgateway:{} grouping_key:{}'.format(pushgateway, grouping_key))
 
     while pushgateway:
         try:
             time.sleep(10)
             logger.debug("metric push to {}".format(pushgateway))
-            push_to_gateway(pushgateway, job='pushgateway', registry=REGISTRY, grouping_key=default_labels_dic)
+            push_to_gateway(pushgateway, job='pushgateway', registry=REGISTRY, grouping_key=grouping_key)
         except Exception as exc:
             logger.info("metric timer exc:{}".format(repr(exc)))
 
