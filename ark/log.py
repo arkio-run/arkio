@@ -1,5 +1,6 @@
 import logging
 import os
+import socket
 import traceback
 from logging import LogRecord
 from logging.handlers import TimedRotatingFileHandler
@@ -45,8 +46,15 @@ def set_log() -> None:
 
     # 文件日志
     os.makedirs(os.path.join(cfg.log_dir, cfg.app_id), exist_ok=True)
-    filename = "{}/{}/{}.log".format(cfg.log_dir, cfg.app_id, mode)
-    rotating_handler = TimedRotatingFileHandler(filename=filename)
+    suffix = ""
+    if os.getenv("LOG_NAME_SUFFIX"):
+        suffix = "-" + os.getenv("LOG_NAME_SUFFIX")
+    elif os.getenv("LOG_NAME_USING_HOST"):
+        suffix = "-" + socket.gethostname()
+    elif os.getenv("LOG_NAME_USING_HOST_SUFFIX"):
+        suffix = "-" + socket.gethostname().split('-')[-1]
+    filename = "{}/{}/{}{}.log".format(cfg.log_dir, cfg.app_id, mode, suffix)
+    rotating_handler = TimedRotatingFileHandler(filename=filename, when=cfg.log_when, backupCount=cfg.log_backup)
     rotating_handler.setLevel(level)
     rotating_handler.setFormatter(logging.Formatter(fmt))
     rotating_handler.addFilter(TraceFilter())

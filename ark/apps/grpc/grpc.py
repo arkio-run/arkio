@@ -1,3 +1,4 @@
+import signal
 import functools
 import logging
 import time
@@ -12,11 +13,10 @@ from typing import Tuple
 
 import grpc._server
 from google.protobuf import json_format
-
-from ark.ctx import g, Meta
 from google.protobuf.descriptor import FileDescriptor
 from grpc_reflection.v1alpha import reflection
 
+from ark.ctx import g, Meta
 from ark.config import GrpcAppConfig
 from ark.config import load_app_config
 from ark.env import get_mode
@@ -24,6 +24,7 @@ from ark.env import MODE_GRPC
 from ark.exc import BizExc, SysExc
 from ark.utils import load_module
 from ark.utils import load_obj
+from ark.metric.iface import IfaceMetric
 from .patch import custom_code
 
 service = None
@@ -50,6 +51,7 @@ class Servicer:
             """统计接口状况，QPS、耗时等"""
             g.meta = Meta(context=context)
             t0 = time.time()
+            ret = 'success'
             try:
                 json_req = json_format.MessageToDict(request, preserving_proto_field_name=True)
                 logger.info('iface:{} req:{}'.format(name, json_req))
@@ -70,6 +72,7 @@ class Servicer:
                 return rsp
             finally:
                 try:
+                    IfaceMetric.timer('grpc', tags={'iface': name, 'ret': ret}, amt=time.time() - t0)
                     g.meta.clear()
                 except BaseException as exc:
                     logger.error('Servicer method:{} exc:{}'.format(name, repr(exc)), exc_info=True)
@@ -87,7 +90,7 @@ class Service:
 
     def init(self) -> None:
         mode = get_mode()
-        logger.info("service init :{}".format(mode))
+        logger.info("service init: {}".format(mode))
         if mode == MODE_GRPC:
             self.server = grpc.server(futures.ThreadPoolExecutor(max_workers=100))
 
@@ -118,7 +121,7 @@ class Service:
         self.server.wait_for_termination()
 
     def stop(self) -> None:
-        logger.info("service stop")
+        logger.info("service stop, graceful")
         assert self.server
         self.server.stop(5)
 
@@ -136,6 +139,16 @@ def init() -> Service:
     return service
 
 
+def stop(signum: int, frame: Any):
+    global service
+    if not service:
+        return
+    logger.info("grpc, got signal {}".format(signum))
+    assert isinstance(service, Service)
+    service.stop()
+
+
 def start() -> None:
-    s = init()
-    s.start()
+    signal.signal(signal.SIGINT, stop)
+    signal.signal(signal.SIGTERM, stop)
+    init().start()

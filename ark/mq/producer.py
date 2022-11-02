@@ -1,3 +1,4 @@
+import time
 import logging
 from typing import Any
 from typing import Callable
@@ -11,18 +12,24 @@ from kombu import Connection
 from kombu import Exchange
 from kombu import producers
 from kombu.entity import PERSISTENT_DELIVERY_MODE as PERSISTENT
-
+from ark.metric.mq import MqMetric
 logger = logging.getLogger(__name__)
 
 
 def wrap(func: Callable[..., Any]) -> Callable[..., Any]:
     def inner(self: Any, *args: Any, **kwargs: Any) -> Any:
+        t0 = time.time()
+        ret = 'success'
         target = self.topic if self.type == "kafka" else kwargs.get("routing_key", "unknown")
         try:
             return func(self, *args, **kwargs)
         except BaseException as exc:
+            ret = 'sys_exc'
             logger.error("type:{} target:{} error:{}".format(self.type, target, repr(exc)), exc_info=True)
             raise
+        finally:
+            tags = {'model': 'producer', 'type': self.type, 'target': target, 'handler': '', 'ret': ret}
+            MqMetric.timer(self.type, tags=tags, amt=time.time() - t0)
 
     return inner
 

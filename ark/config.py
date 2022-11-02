@@ -26,6 +26,14 @@ class BasicAppConfig:
         return self.config.get("log_lv", "INFO").upper()  # type: ignore
 
     @property
+    def log_when(self) -> str:
+        return self.config.get("log_when", "D").upper()  # type: ignore
+
+    @property
+    def log_backup(self) -> int:
+        return int(self.config.get("log_backup", 14))
+
+    @property
     def log_dir(self) -> str:
         log_dir = os.getenv("LOG_DIR") or ""
         return str(log_dir or self.config.get("log_dir", "/tmp"))
@@ -33,6 +41,10 @@ class BasicAppConfig:
     @property
     def consumers(self) -> Any:
         return self.config.get("consumers", {})
+
+    @property
+    def metric(self) -> Any:
+        return self.config.get("metric", {})
 
 
 class AsgiAppConfig(BasicAppConfig):
@@ -89,6 +101,10 @@ class InfraConfig:
     def celery_broker(self) -> str:
         return self.config.get("infra", {}).get("celery", {}).get("broker", "")  # type: ignore
 
+    @property
+    def pushgateway(self) -> str:
+        return self.config.get("infra", {}).get("pushgateway", {})  # type: ignore
+
 
 app_config = None
 infra_config = None
@@ -121,6 +137,7 @@ def load_infra_config() -> InfraConfig:
     return infra_config
 
 
-def set_conf():
+def set_conf(infra=True):
     load_app_config()
-    load_infra_config()
+    if infra:
+        load_infra_config()
