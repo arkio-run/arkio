@@ -27,7 +27,7 @@ class BasicAppConfig:
 
     @property
     def log_when(self) -> str:
-        return self.config.get("log_when", "D").upper()  # type: ignore
+        return self.config.get("log_when", "MIDNIGHT").upper()  # type: ignore
 
     @property
     def log_backup(self) -> int:
