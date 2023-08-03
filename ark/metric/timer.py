@@ -11,8 +11,20 @@ logger = logging.getLogger(__name__)
 
 host = socket.gethostname()
 
+pushgateway = ''
+grouping_key = None
+
+def pushing():
+    if not pushgateway:
+        return
+    try:
+        logger.debug("metric push to {}".format(pushgateway))
+        push_to_gateway(pushgateway, job='pushgateway', registry=REGISTRY, grouping_key=grouping_key)
+    except Exception as exc:
+        logger.info("metric timer exc:{}".format(repr(exc)))
 
 def running():
+    global pushgateway, grouping_key
     logger.info("metric timer running")
     from ark.config import basic_config, BasicAppConfig
     from ark.config import infra_config, InfraConfig
@@ -28,12 +40,8 @@ def running():
     logger.info('pushgateway:{} grouping_key:{}'.format(pushgateway, grouping_key))
 
     while pushgateway:
-        try:
-            time.sleep(10)
-            logger.debug("metric push to {}".format(pushgateway))
-            push_to_gateway(pushgateway, job='pushgateway', registry=REGISTRY, grouping_key=grouping_key)
-        except Exception as exc:
-            logger.info("metric timer exc:{}".format(repr(exc)))
+        pushing()
+        time.sleep(10)
 
 
 def start():

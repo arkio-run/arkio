@@ -39,8 +39,8 @@ def shell() -> None:
     set_grpc()
     set_conf()
 
-    import ark.metric.timer  # noqa
-    ark.metric.timer.start()
+    import ark.metric  # noqa
+    ark.metric.start()
 
     import ark.apps.shell  # noqa
     ark.apps.shell.start()
@@ -54,7 +54,15 @@ def run(script: str) -> None:
     set_log()
     set_grpc()
     set_conf()
-    runpy.run_path(script, {}, "__main__")
+
+    import ark.metric  # noqa
+    try:
+        ark.metric.start()
+        runpy.run_path(script, {}, "__main__")
+    except Exception as exc:
+        click.echo("ark run {}, err:{}".format(script, repr(exc)))
+    finally:
+        ark.metric.pushing()
 
 
 @cli.command(context_settings=context_settings)
@@ -75,8 +83,8 @@ def serve(wsgi: bool) -> None:
         set_grpc()
         set_conf()
 
-        import ark.metric.timer  # noqa
-        ark.metric.timer.start()
+        import ark.metric  # noqa
+        ark.metric.start()
         import ark.apps.grpc  # noqa
         ark.apps.grpc.start()
 
