@@ -3,6 +3,7 @@ import logging
 import os
 import sys
 import threading
+import time
 
 from flask import request
 from gunicorn.app.wsgiapp import WSGIApplication
@@ -14,6 +15,7 @@ from ark.config import app_config
 from ark.ctx import g, Meta
 from ark.exc import BizExc, SysExc
 from ark.exc import ExcCode
+from ark.metric.iface import IfaceMetric
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +34,8 @@ class WSGIApp(WSGIApplication):
 class ThreadWorker(_ThreadWorker):
     def init_process(self):
         g.ctx = threading.local()
+        from ark.metric import timer  # noqa
+        timer.start()
         super().init_process()
 
     def handle_request(self, req, conn):
@@ -58,19 +62,31 @@ def api_wrapper(func):
         elif method.upper() == 'POST':
             req = request.get_json()
         logger.info("[{}] {} req:{}".format(method, path, req))
+
+        t0 = time.time()
+        ret, rsp = 'success', {}
         try:
             rsp = func(*args, **kwargs)
             rsp = {'code': ExcCode.SUCCESS, 'msg': '', 'data': rsp}
             logger.info("[{}] {} rsp:{}".format(method, path, rsp))
             return rsp
         except (BizExc, SysExc) as exc:
+            ret = 'biz_exc' if isinstance(exc, BizExc) else 'sys_exc'
             rsp = {'code': exc.code, 'msg': exc.msg, 'data': {}}
-            logger.info('[{}] {} code:{} msg:{}'.format(method, path, exc.code, exc.msg))
+            logger.warning('[{}] {} code:{} msg:{}'.format(method, path, exc.code, exc.msg))
             return rsp
         except BaseException as exc:
+            ret = 'sys_exc'
             logger.error('[{}] {} exc:{}'.format(method, path, repr(exc)), exc_info=True)
             rsp = {'code': ExcCode.UNKNOWN, 'msg': repr(exc)[:100], 'data': {}}
             return rsp
+        finally:
+            try:
+                iface = '{} [{}]'.format(path, method)
+                tags = {'iface': iface, 'method': method, 'path': path, 'ret': ret, 'code': rsp.get('code', 0)}
+                IfaceMetric.timer('wsgi', tags=tags, amt=time.time() - t0)
+            except BaseException as exc:
+                logger.error('[{}] {} exc:{}'.format(method, path, repr(exc)), exc_info=True)
 
     return wrapper
 
