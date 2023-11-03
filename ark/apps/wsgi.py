@@ -1,14 +1,22 @@
+import functools
+import logging
 import os
 import sys
 import threading
 
+from flask import request
 from gunicorn.app.wsgiapp import WSGIApplication
 from gunicorn.http.message import Request
 from gunicorn.workers.gthread import ThreadWorker as _ThreadWorker
 
+from ark import db
 from ark.config import app_config
 from ark.ctx import g, Meta
-from ark import db
+from ark.exc import BizExc, SysExc
+from ark.exc import ExcCode
+
+logger = logging.getLogger(__name__)
+
 
 class WSGIApp(WSGIApplication):
     def __init__(self, *args, **kwargs):
@@ -37,6 +45,34 @@ class ThreadWorker(_ThreadWorker):
         finally:
             g.meta.clear()
             db.manager.remove()
+
+
+def api_wrapper(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        req = {}
+        path = request.path
+        method = request.method
+        if method.upper() == 'GET':
+            req = dict(request.args)
+        elif method.upper() == 'POST':
+            req = request.get_json()
+        logger.info("[{}] {} req:{}".format(method, path, req))
+        try:
+            rsp = func(*args, **kwargs)
+            rsp = {'code': ExcCode.SUCCESS, 'msg': '', 'data': rsp}
+            logger.info("[{}] {} rsp:{}".format(method, path, rsp))
+            return rsp
+        except (BizExc, SysExc) as exc:
+            rsp = {'code': exc.code, 'msg': exc.msg, 'data': {}}
+            logger.info('[{}] {} code:{} msg:{}'.format(method, path, exc.code, exc.msg))
+            return rsp
+        except BaseException as exc:
+            logger.error('[{}] {} exc:{}'.format(method, path, repr(exc)), exc_info=True)
+            rsp = {'code': ExcCode.UNKNOWN, 'msg': repr(exc)[:100], 'data': {}}
+            return rsp
+
+    return wrapper
 
 
 def start():
