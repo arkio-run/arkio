@@ -21,6 +21,7 @@ from kombu.transport.pyamqp import Channel
 
 from ark.exc import BizExc
 from ark.exc import SysExc
+from ark import db
 from ..ctx import g, Meta
 from ..mock import Context
 
@@ -49,6 +50,7 @@ def wrap(type: str, target: str, func: Any) -> Any:
                 tags = {'model': 'consumer', 'type': type, 'target': target, 'handler': hdl, 'ret': ret}
                 MqMetric.timer(type, tags=tags, amt=time.time() - t0)
                 g.meta.clear()
+                db.manager.remove()
             except BaseException as exc:
                 logger.error('consumer type:{} target:{} exc:{}'.format(type, target, repr(exc)), exc_info=True)
     return inner

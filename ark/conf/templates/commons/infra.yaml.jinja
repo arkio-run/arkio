@@ -1,8 +1,19 @@
 infra:
   database:
-    db:
-      master: mysql+pymysql://root:root@localhost:3306/mysql?charset=utf8mb4
-      slave: mysql+pymysql://root:root@localhost:3306/mysql?charset=utf8mb4
+    db: mysql+pymysql://root:root@localhost:3306/unittest?charset=utf8mb4
+    db2:
+      url: mysql+pymysql://root:root@localhost:3306/unittest?charset=utf8mb4
+      autocommit: false
+      connect_args:
+        read_timeout: 10
+        write_timeout: 10
+      engine_args:
+        pool_size: 8
+        pool_recycle: 600
+        pool_timeout: 3
+        max_overflow: 0
+        echo: false
+        echo_pool: false
   redis:
     redis: redis://localhost:6379/0
   amqp:

@@ -8,7 +8,7 @@ from gunicorn.workers.gthread import ThreadWorker as _ThreadWorker
 
 from ark.config import app_config
 from ark.ctx import g, Meta
-
+from ark import db
 
 class WSGIApp(WSGIApplication):
     def __init__(self, *args, **kwargs):
@@ -36,6 +36,7 @@ class ThreadWorker(_ThreadWorker):
             super().handle_request(req, conn)
         finally:
             g.meta.clear()
+            db.manager.remove()
 
 
 def start():

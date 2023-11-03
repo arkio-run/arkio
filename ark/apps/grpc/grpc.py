@@ -25,6 +25,7 @@ from ark.exc import BizExc, SysExc
 from ark.utils import load_module
 from ark.utils import load_obj
 from ark.metric.iface import IfaceMetric
+from ark import db
 from .patch import custom_code
 
 service = None
@@ -74,6 +75,7 @@ class Servicer:
                 try:
                     IfaceMetric.timer('grpc', tags={'iface': name, 'ret': ret}, amt=time.time() - t0)
                     g.meta.clear()
+                    db.manager.remove()
                 except BaseException as exc:
                     logger.error('Servicer method:{} exc:{}'.format(name, repr(exc)), exc_info=True)
         self._wrapped_methods[name] = inner
