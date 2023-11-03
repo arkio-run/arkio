@@ -47,7 +47,7 @@ class BasicAppConfig:
         return self.config.get("metric", {})
 
 
-class AsgiAppConfig(BasicAppConfig):
+class WsgiAppConfig(BasicAppConfig):
     @property
     def app_uri(self) -> str:
         return self.config.get("services", {}).get(TYPE_WSGI, {}).get("app")  # type: ignore
@@ -118,11 +118,11 @@ def load_basic_config() -> BasicAppConfig:
     return basic_config
 
 
-def load_app_config() -> Union[AsgiAppConfig, GrpcAppConfig, BasicAppConfig]:
+def load_app_config() -> Union[WsgiAppConfig, GrpcAppConfig, BasicAppConfig]:
     global app_config
     if app_config is None:
         if env.is_wsgi():
-            app_config = AsgiAppConfig().load()
+            app_config = WsgiAppConfig().load()
         elif env.is_grpc():
             app_config = GrpcAppConfig().load()
         else:

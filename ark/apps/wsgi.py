@@ -5,13 +5,14 @@ import sys
 import threading
 import time
 
-from flask import request
+from ark.utils import load_obj
+from flask import request, Flask
 from gunicorn.app.wsgiapp import WSGIApplication
 from gunicorn.http.message import Request
 from gunicorn.workers.gthread import ThreadWorker as _ThreadWorker
 
 from ark import db
-from ark.config import app_config
+from ark.config import app_config, WsgiAppConfig
 from ark.ctx import g, Meta
 from ark.exc import BizExc, SysExc
 from ark.exc import ExcCode
@@ -89,6 +90,18 @@ def api_wrapper(func):
                 logger.error('[{}] {} exc:{}'.format(method, path, repr(exc)), exc_info=True)
 
     return wrapper
+
+
+app = None
+
+
+def init() -> Flask:
+    global app
+    if not app:
+        cfg = app_config
+        assert isinstance(cfg, WsgiAppConfig)
+        app = load_obj(cfg.app_uri)
+    return app
 
 
 def start():

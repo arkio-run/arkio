@@ -33,11 +33,17 @@ def create(appid: str, level: int) -> None:
 
 
 @cli.command(context_settings=context_settings)
-def shell() -> None:
+@click.option("--wsgi", is_flag=True, help="shell with wsgi")
+def shell(wsgi: bool) -> None:
     click.echo("ark shell.")
     set_log()
-    set_grpc()
-    set_conf()
+
+    if wsgi:
+        set_wsgi()
+        set_conf()
+    else:
+        set_grpc()
+        set_conf()
 
     import ark.metric  # noqa
     ark.metric.start()
