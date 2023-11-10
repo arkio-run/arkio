@@ -64,22 +64,23 @@ def api_wrapper(func):
             req = request.get_json()
         logger.info("[{}] {} req:{}".format(method, path, req))
 
+        request_id = g.meta.trace_id
         t0 = time.time()
         ret, rsp = 'success', {}
         try:
             rsp = func(*args, **kwargs)
-            rsp = {'code': ExcCode.SUCCESS, 'msg': '', 'data': rsp}
+            rsp = {'code': ExcCode.SUCCESS, 'msg': '', 'data': rsp, 'request_id': request_id}
             logger.info("[{}] {} rsp:{}".format(method, path, rsp))
             return rsp
         except (BizExc, SysExc) as exc:
             ret = 'biz_exc' if isinstance(exc, BizExc) else 'sys_exc'
-            rsp = {'code': exc.code, 'msg': exc.msg, 'data': {}}
+            rsp = {'code': exc.code, 'msg': exc.msg, 'data': {}, 'request_id': request_id}
             logger.warning('[{}] {} code:{} msg:{}'.format(method, path, exc.code, exc.msg))
             return rsp
         except BaseException as exc:
             ret = 'sys_exc'
             logger.error('[{}] {} exc:{}'.format(method, path, repr(exc)), exc_info=True)
-            rsp = {'code': ExcCode.UNKNOWN, 'msg': repr(exc)[:100], 'data': {}}
+            rsp = {'code': ExcCode.UNKNOWN, 'msg': repr(exc)[:100], 'data': {}, 'request_id': request_id}
             return rsp
         finally:
             try:

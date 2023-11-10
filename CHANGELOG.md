@@ -5,6 +5,7 @@
  * 【功能】API装饰器
  * 【功能】wsgi模式打点
  * 【功能】shell模式支持wsgi
+ * 【功能】API返回request id
 
 ## v0.0.7
  * 【功能】wsgi使用多线程模式
